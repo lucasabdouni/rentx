@@ -7,6 +7,7 @@ import DoneSvg from '../../assets/done.svg';
 
 import { Container, Content, Title, Message, Footer } from './styles';
 import { ConfirmButton } from '../../components/ConfirmButton';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export function SchedulingComplete() {
   const { width } = useWindowDimensions();
