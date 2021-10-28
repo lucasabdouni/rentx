@@ -7,7 +7,7 @@ import React, {
 } from 'react';
 import { api } from '../services/api';
 import { database } from '../database';
-import { User as ModelUser } from '../database/models/User';
+import { User as ModelUser } from '../database/model/User';
 
 interface User {
   id: string;
@@ -28,6 +28,8 @@ interface AuthContextData {
   user: User;
   signIn: (credentials: SignInCredentials) => Promise<void>;
   signOut: () => Promise<void>;
+  updateUser: (user: User) => Promise<void>;
+  loading: boolean;
 }
 
 interface AuthProviderProps {
@@ -38,6 +40,7 @@ const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
 function AuthProvider({ children }: AuthProviderProps) {
   const [data, setData] = useState<User>({} as User);
+  const [loading, setLoading] = useState(true);
 
   async function signIn({ email, password }: SignInCredentials) {
     try {
@@ -67,6 +70,24 @@ function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
+  async function updateUser(user: User) {
+    try {
+      const userCollection = database.get<ModelUser>('users');
+      await database.write(async () => {
+        const userSelected = await userCollection.find(user.id);
+        await userSelected.update((userData) => {
+          (userData.name = user.name),
+            (userData.driver_license = user.driver_license),
+            (userData.avatar = user.avatar);
+        });
+      });
+
+      setData(user);
+    } catch (error) {
+      throw new Error();
+    }
+  }
+
   async function signOut() {
     try {
       const userCollection = database.get<ModelUser>('users');
@@ -90,6 +111,7 @@ function AuthProvider({ children }: AuthProviderProps) {
         const userData = response[0]._raw as unknown as User;
         api.defaults.headers.authorization = `Bearer ${userData.token}`;
         setData(userData);
+        setLoading(false);
       }
     }
 
@@ -102,6 +124,8 @@ function AuthProvider({ children }: AuthProviderProps) {
         user: data,
         signIn,
         signOut,
+        updateUser,
+        loading,
       }}
     >
       {children}
